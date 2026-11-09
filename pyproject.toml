@@ -1,0 +1,9 @@
+[project]
+name = "mathsearch"
+version = "0.1.0"
+description = "Search over openly licensed math textbooks, with a hand-labeled benchmark."
+requires-python = ">=3.13"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

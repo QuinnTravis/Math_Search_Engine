@@ -1,0 +1,42 @@
+[
+  {
+    "id": "judson-abstract-algebra",
+    "title": "Abstract Algebra: Theory and Applications (Annual Edition 2025)",
+    "authors": "Thomas W. Judson, Robert A. Beezer",
+    "file": "judson-abstract-algebra.pdf",
+    "pages": 503,
+    "license": "GFDL-1.2-or-later",
+    "source_url": "https://judsonbooks.org/aata-files/aata-20250801.pdf",
+    "sha256": "4f74587b61861b4790d613f2adb64699f90fd1d07760204f1d8fc9fcaf63d14f"
+  },
+  {
+    "id": "levin-discrete-math",
+    "title": "Discrete Mathematics: An Open Introduction (4th Edition)",
+    "authors": "Oscar Levin",
+    "file": "levin-discrete-math.pdf",
+    "pages": 549,
+    "license": "CC-BY-NC-SA-4.0",
+    "source_url": "https://discrete.openmathbooks.org/pdfs/dmoi4.pdf",
+    "sha256": "da85572c79111d63ce90e18a116e0551732c6a3725b7bc08aa16b3f4557d55ac"
+  },
+  {
+    "id": "lebl-basic-analysis",
+    "title": "Basic Analysis I: Introduction to Real Analysis (Version 6.3)",
+    "authors": "Jiri Lebl",
+    "file": "lebl-basic-analysis.pdf",
+    "pages": 312,
+    "license": "CC-BY-SA-4.0 OR CC-BY-NC-SA-4.0",
+    "source_url": "https://www.jirka.org/ra/realanal.pdf",
+    "sha256": "9c204ae1f1ee1641fa604a6456c0d13db4390db44633ee2df9c9d97b5486b7a6"
+  },
+  {
+    "id": "grinstead-snell-probability",
+    "title": "Grinstead and Snell's Introduction to Probability (CHANCE version, 4 July 2006)",
+    "authors": "Charles M. Grinstead, J. Laurie Snell (version by Peter G. Doyle)",
+    "file": "grinstead-snell-probability.pdf",
+    "pages": 518,
+    "license": "GFDL",
+    "source_url": "https://math.dartmouth.edu/~prob/prob/prob.pdf",
+    "sha256": "763eab9894983ddfd6cd7f84685548d1515a9326a2d9fd015474534460551a5e"
+  }
+]
