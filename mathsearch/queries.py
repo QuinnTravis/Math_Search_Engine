@@ -39,6 +39,13 @@ def spans_overlap(a, b):
     return a["book"] == b["book"] and a["start"] <= b["end"] and b["start"] <= a["end"]
 
 
+def share_answer(a, b):
+    """True if two queries have overlapping grade-2 spans, i.e. the same answer passage."""
+    answers_a = [label for label in a["labels"] if label["grade"] == 2]
+    answers_b = [label for label in b["labels"] if label["grade"] == 2]
+    return any(spans_overlap(x, y) for x in answers_a for y in answers_b)
+
+
 def label_problems(label, pages_by_book):
     """Problems with one label, checked against the page count of each book."""
     if label["book"] not in pages_by_book:
@@ -88,4 +95,12 @@ def all_problems(queries, pages_by_book):
             problems.setdefault(query["id"], []).append("duplicate query text")
         seen_ids.add(query["id"])
         seen_texts.add(text)
+    # A dev query and a test query with the same answer would leak the test set into tuning
+    # (`make split` keeps them together; this catches labels edited after the split).
+    for i, a in enumerate(queries):
+        for b in queries[i + 1:]:
+            in_both_splits = {a.get("split"), b.get("split")} == set(SPLITS)
+            if in_both_splits and share_answer(a, b):
+                problems.setdefault(b["id"], []).append(
+                    f"shares a grade-2 span with {a['id']}, which is in the other split")
     return problems

@@ -71,6 +71,8 @@ def chunk_stats(chunks, token_lengths=None, token_limit=None):
         stats["mean_tokens"] = statistics.mean(token_lengths)
         stats["median_tokens"] = statistics.median(token_lengths)
         stats["max_tokens"] = max(token_lengths)
+        # What each vector actually sees: tokens past the limit are cut off before embedding.
+        stats["mean_embedded_tokens"] = statistics.mean(min(n, token_limit) for n in token_lengths)
         stats["token_limit"] = token_limit
         stats["share_over_token_limit"] = sum(n > token_limit for n in token_lengths) / len(token_lengths)
     return stats

@@ -59,13 +59,18 @@ Nothing in Phase 1 starts until baseline numbers are committed.
 Add one change at a time and re-run the development benchmark after each, so every row of the final results table is an ablation. Keep a change only if it helps, and record the ones that do not.
 
 1. **Audit extraction.** Check how equations, symbols and theorem headings come out of PyMuPDF and the Tesseract fallback. Write down the failure patterns with examples before fixing anything. Many openly licensed books also publish their source (LaTeX or PreTeXt); if one does, compare extracting from source against extracting from the PDF.
-2. **Structure-aware chunking.** Split at definition, theorem, lemma, proof and example boundaries, and attach the section title to each chunk as context. Compare against the current fixed-size chunks. I expect this to matter as much as any model change.
-3. **Hybrid retrieval.** Combine BM25 and dense scores with reciprocal rank fusion. Tune the fusion constant on the development set only.
-4. **Cross-encoder reranking.** Rerank the top 50 candidates with a pretrained cross-encoder. Do not fine-tune unless the benchmark shows a clear reason. Report the added latency.
-5. **Notation handling.** Normalize Unicode math symbols and test notation-heavy queries separately. If dense retrieval still fails on them, document that rather than hiding it.
-6. **Index comparison.** Compare flat FAISS, IVF and HNSW on recall versus latency. At this corpus size, exact search may already be fastest; if so, the finding is that approximate indexes add nothing here.
-7. **Optional, time-boxed:** one alternative embedding model, compared on the same benchmark.
-8. **Error analysis.** Take the 20 worst development queries and classify each failure (extraction, chunking, vocabulary mismatch, notation, ambiguous label). Summarize the counts and give two or three examples.
+2. **Chunk-length sweep, with truncation held at zero.** The Phase 0 token-capped baseline removed truncation but also roughly halved chunk length, so its gain mixes the two effects. Re-chunk with the token-capped chunker at **128, 192 and 254** content tokens. Keep everything else fixed: the same cleaning, the same per-page cutting, the same dense model (`all-MiniLM-L6-v2`) and the same flat index. The 254 point is the existing `fixedtok256-minilm` index.
+   - No chunk is truncated at any of the three sizes, so differences between them are the effect of **chunk length alone**.
+   - The effect of **truncation** is the gap between `fixed400-minilm` and the 254 point. Each vector sees at most 254 content tokens in both, but the original silently drops the rest of each chunk. Compare `mean_embedded_tokens` in each index's `config.json` to confirm the two embed similar amounts per vector before attributing the gap to truncation.
+   - Report chunk count, mean words and mean embedded tokens next to each row, because SpanRecall depends on chunk length.
+   - Dev set only. The chosen size becomes the default chunk budget for structure-aware chunking (step 3), so that comparison is not confounded by length either.
+3. **Structure-aware chunking.** Split at definition, theorem, lemma, proof and example boundaries, and attach the section title to each chunk as context. Compare against the current fixed-size chunks. I expect this to matter as much as any model change.
+4. **Hybrid retrieval.** Combine BM25 and dense scores with reciprocal rank fusion. Tune the fusion constant on the development set only.
+5. **Cross-encoder reranking.** Rerank the top 50 candidates with a pretrained cross-encoder. Do not fine-tune unless the benchmark shows a clear reason. Report the added latency.
+6. **Notation handling.** Normalize Unicode math symbols and test notation-heavy queries separately. If dense retrieval still fails on them, document that rather than hiding it.
+7. **Index comparison.** Compare flat FAISS, IVF and HNSW on recall versus latency. At this corpus size, exact search may already be fastest; if so, the finding is that approximate indexes add nothing here.
+8. **Optional, time-boxed:** one alternative embedding model, compared on the same benchmark.
+9. **Error analysis.** Take the 20 worst development queries and classify each failure (extraction, chunking, vocabulary mismatch, notation, ambiguous label). Summarize the counts and give two or three examples.
 
 **Acceptance:** the best configuration beats both baselines on the held-out set, reported with a paired bootstrap confidence interval over queries (100 queries is small, so state the uncertainty), and the error analysis is written up in `docs/`.
 

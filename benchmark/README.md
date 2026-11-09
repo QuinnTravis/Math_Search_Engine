@@ -65,7 +65,7 @@ The target is about 16 or 17 queries per category, spread roughly evenly over th
 
 1. **Write the query before looking at the books.** Phrase it the way a student would ask. Looking at the page first makes queries copy the book's wording, which favours keyword search.
 2. Every query must have **at least one grade-2 answer** in the corpus. Drop a query if no answer exists. (This means the benchmark does not test "no answer" behaviour, which is a known limitation.)
-3. Avoid near-duplicates. Two queries should not have the same answer passage.
+3. Avoid near-duplicates. Ideally no two queries share an answer passage. When they do (it is sometimes natural, such as a definition query and a paraphrase of it), `make split` keeps them in the same split.
 4. Avoid queries whose only answer is a figure or a table, since text extraction cannot see figures.
 
 ## Labeling rules
@@ -96,9 +96,22 @@ The target is about 16 or 17 queries per category, spread roughly evenly over th
 
 ## Splits and the held-out set
 
-- Write all 100 queries first, then run `make split` **once** (seed 0 by default; `make split SEED=n` to change it).
-- **Stratified by category.** Each category first gets the whole-number part of 60% of its size as dev queries. The few leftover dev slots go to the categories with the largest fractional parts (the "largest remainder" method). This makes the total exactly 60% of the queries, and each category is within one query of its exact share. Within a category, queries are sorted by id, shuffled with `random.Random(seed)`, and the first ones become dev.
-- The seed, the method, the per-category counts and the dev and test ids are written to `benchmark/split.json`, and every evaluation run records the seed. The script refuses to run a second time.
+- **Write and label all 100 queries first**, then run `make split` **once** (seed 0 by default; `make split SEED=n` to change it). The split needs the labels, and it refuses to run if any query has no grade-2 span.
+- **Queries that share an answer stay together.** Two queries share an answer if their grade-2 spans overlap. Sharing is followed through chains: if A shares with B and B shares with C, all three form one group, even if A and C don't overlap. A group is always assigned as a whole. Otherwise, tuning on a dev query would partly tune on its test twin.
+- **Stratified by category.** Each category's dev target is the whole-number part of 60% of its size. The few leftover dev slots go to the categories with the largest fractional parts (the "largest remainder" method), so the targets add up to exactly 60% of all queries.
+- **Placement.**
+  - Groups are shuffled with `random.Random(seed)`, then placed largest first. Big groups are hardest to fit, and single queries placed last can fill whatever room is left.
+  - Each group goes to the split where it overshoots its categories' remaining slots the least.
+  - On a tie, it goes to dev with probability (free dev slots) / (free slots), like drawing without replacement.
+  - With no shared answers, every category target is hit exactly. A group can force a category off target (three queries with one answer cannot be split 60/40). In that case, the placement gets as close as the groups allow, using a greedy rule rather than a provably optimal one.
+- `benchmark/split.json` records:
+  - the seed and the method
+  - each category's dev target and actual counts
+  - the shared-answer groups
+  - the dev and test ids
+
+  Every evaluation run records the seed. The script refuses to run a second time.
+- If labels are edited after the split so that a dev query and a test query come to share an answer, the evaluation harness reports it and refuses to run.
 - All tuning (chunk sizes, the fusion constant, which changes to keep) uses `dev` only.
 - `test` numbers are reported once at the end of each phase.
 

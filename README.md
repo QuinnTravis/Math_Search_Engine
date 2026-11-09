@@ -24,7 +24,7 @@ Command line: `.venv/bin/python -m mathsearch.search "conditions for an Eulerian
 
 ```bash
 make label     # labeling tool: write queries, mark answer pages
-make split     # once, after all 100 queries exist: 60 dev / 40 held-out, stratified, seed recorded
+make split     # once, after all 100 are labeled: 60/40, stratified, shared answers kept together, seed recorded
 make baseline  # BM25, original dense, dense with 256-token chunks -> results/baseline.json
 make report    # table of every logged run
 ```

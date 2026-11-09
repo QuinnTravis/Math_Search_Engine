@@ -16,7 +16,7 @@ index: $(INDEXES) ## extract, chunk, embed and save every index configuration (s
 label: $(INDEXES) ## open the benchmark labeling tool
 	$(PY) -m streamlit run benchmark/label_app.py
 
-split:            ## once, after all 100 queries exist: stratified 60/40 split (override with SEED=n)
+split:            ## once, after all 100 queries are labeled: stratified 60/40, shared answers kept together (SEED=n)
 	$(PY) -m mathsearch.split_queries --seed $(SEED)
 
 baseline: $(INDEXES) ## the three baseline runs, on dev and held-out
