@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Copyrighted or non-redistributable books. Never commit these.
+private_corpus/
+
+# Generated artifacts (rebuilt with `make index`)
+data/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,11 @@
+# Python 3.13. Exact pins so that embeddings and latency numbers are reproducible.
+pymupdf==2.1
+pytesseract==0.3.13   # also needs the tesseract binary: `brew install tesseract` / `apt install tesseract-ocr`
+pillow==13.0.0
+numpy==2.5.4
+faiss-cpu==1.15.1
+sentence-transformers==6.2.0
+transformers==5.22.2
+torch==2.15.0
+streamlit==1.67.0
+pytest==9.2.0
