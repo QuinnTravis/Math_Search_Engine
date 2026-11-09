@@ -23,7 +23,7 @@ from mathsearch.extract import load_pages  # noqa: E402
 from mathsearch.queries import (  # noqa: E402
     CATEGORIES, load_queries, next_query_id, query_problems, save_queries, spans_overlap,
 )
-from mathsearch.retrievers import DEFAULT_INDEX, SYSTEMS, load_chunks, make_retriever  # noqa: E402
+from mathsearch.retrievers import BASELINE_RUNS, index_is_built, load_run, parse_run  # noqa: E402
 
 NEW = "NEW"
 GRADE_NAMES = {2: "2 · directly answers", 1: "1 · related background", 0: "0 · not relevant"}
@@ -61,8 +61,16 @@ def render_page(book_id, page_number):
 
 @st.cache_resource(show_spinner="Loading the retrieval systems...")
 def get_systems():
-    chunks = load_chunks(DEFAULT_INDEX)
-    return chunks, [make_retriever(name, DEFAULT_INDEX, chunks) for name in SYSTEMS]
+    """[(chunks, retriever)] for every baseline run. Pooling from all of them catches more missed answers."""
+    systems = []
+    for spec in BASELINE_RUNS:
+        _, chunks, retriever = load_run(spec)
+        systems.append((chunks, retriever))
+    return systems
+
+
+def baselines_built():
+    return all(index_is_built(parse_run(spec)[0]) for spec in BASELINE_RUNS)
 
 
 # ---------- search helpers ----------
@@ -85,10 +93,9 @@ def snippet(text, word, width=160):
 
 
 def pool_pages(query_text):
-    """Pages in the top 10 of any system, sorted by book and page so rank and system stay hidden."""
-    chunks, retrievers = get_systems()
+    """Pages in the top 10 of any baseline run, sorted by book and page so rank and system stay hidden."""
     pages = set()
-    for retriever in retrievers:
+    for chunks, retriever in get_systems():
         for chunk_id in retriever.search(query_text, 10):
             chunk = chunks[chunk_id]
             for page in range(chunk["page_start"], chunk["page_end"] + 1):
@@ -246,7 +253,7 @@ with left:
     with st.expander("Review system results (only after your own search)"):
         st.caption("Pages from the top 10 of each system being evaluated, minus pages you have already judged. "
                    "Judge each one so missed answers are caught. System and rank are hidden on purpose.")
-        if not (DEFAULT_INDEX / "config.json").exists():
+        if not baselines_built():
             st.info("Build the index first: `make index`")
         elif st.checkbox("Show candidates", key=f"pool_{current['id']}"):
             judged = current["labels"]

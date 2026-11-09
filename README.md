@@ -13,7 +13,7 @@ Requires Python 3.13 and Tesseract (`brew install tesseract` or `apt install tes
 
 ```bash
 make setup     # create .venv and install pinned dependencies
-make index     # extract, chunk, embed and save the index to data/index/ (a few minutes, first run only)
+make index     # extract, chunk, embed and save the indexes to data/index/ (a few minutes, first run only)
 make app       # search UI at http://localhost:8501
 make test
 ```
@@ -24,8 +24,8 @@ Command line: `.venv/bin/python -m mathsearch.search "conditions for an Eulerian
 
 ```bash
 make label     # labeling tool: write queries, mark answer pages
-make split     # once, after all 100 queries exist: 60 dev / 40 held-out
-make baseline  # BM25 + original dense pipeline -> results/baseline.json
+make split     # once, after all 100 queries exist: 60 dev / 40 held-out, stratified, seed recorded
+make baseline  # BM25, original dense, dense with 256-token chunks -> results/baseline.json
 make report    # table of every logged run
 ```
 

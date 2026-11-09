@@ -6,6 +6,7 @@ change in this project. This file records the rules so the method can be reprodu
 ## Files
 
 - `queries.jsonl` holds the queries and their labels. It is written by the labeling tool (`make label`).
+- `split.json` records the dev/test split and the seed that produced it (written once by `make split`).
 - `label_app.py` is the labeling tool.
 - `CORPUS.md` lists the books and their licenses.
 
@@ -25,9 +26,27 @@ One line per query:
 
 ## Why labels are page spans, not chunk IDs
 
-Chunk IDs change every time the chunking changes. Page spans don't. A retrieved chunk counts as a hit
-if it comes from the same book and its pages overlap a labeled span. This means one set of labels
+Chunk IDs change every time the chunking changes. Page spans don't. This means one set of labels
 can score fixed-size chunks, structure-aware chunks and anything else.
+
+**Hit rule.** A retrieved chunk hits a labeled span if it comes from the same book and **at least half
+of the chunk's words come from pages inside the span**. Every chunk records how many words it took
+from each page, so this works for any chunker. The minimum is there so that a long chunk touching a
+labeled page with one line doesn't count as finding the answer. Without it, bigger chunks would
+always score better. A known limit: labels are page-level, so two chunks from the same labeled page
+both count as hits even if only one contains the passage.
+
+## How the metrics are defined
+
+| Metric | Definition |
+| --- | --- |
+| SpanRecall@k | The fraction of a query's grade-2 spans hit by at least one of the top k chunks. It is **not** hit rate: with two answer spans and one found, SpanRecall is 0.5, not 1. |
+| MRR | 1 / rank of the first chunk that hits a grade-2 span, or 0 if none appears in the top 10. |
+| nDCG@10 | Linear gain (`grade / log2(rank+1)`). Each labeled span earns its grade at most once, and each chunk earns credit for at most one span. The ideal ranking (one perfect chunk per labeled span, best grade first) is scored by the same function, so the actual and ideal DCG follow identical rules. |
+| P50 / P95 latency | The median and 95th percentile of per-query search time, after one untimed warm-up pass. Query embedding is included. |
+
+Every run also logs the mean chunk length of its index and of the chunks it actually retrieved,
+because span recall rises with chunk length.
 
 ## Query categories
 
@@ -77,7 +96,9 @@ The target is about 16 or 17 queries per category, spread roughly evenly over th
 
 ## Splits and the held-out set
 
-- Write all 100 queries first, then run `make split` **once**. It sorts queries by category, shuffles them within each category (fixed seed 0), and assigns dev, dev, dev, test, test in a repeating pattern. That gives exactly 60/40, stratified by category. The script refuses to run a second time.
+- Write all 100 queries first, then run `make split` **once** (seed 0 by default; `make split SEED=n` to change it).
+- **Stratified by category.** Each category first gets the whole-number part of 60% of its size as dev queries. The few leftover dev slots go to the categories with the largest fractional parts (the "largest remainder" method). This makes the total exactly 60% of the queries, and each category is within one query of its exact share. Within a category, queries are sorted by id, shuffled with `random.Random(seed)`, and the first ones become dev.
+- The seed, the method, the per-category counts and the dev and test ids are written to `benchmark/split.json`, and every evaluation run records the seed. The script refuses to run a second time.
 - All tuning (chunk sizes, the fusion constant, which changes to keep) uses `dev` only.
 - `test` numbers are reported once at the end of each phase.
 

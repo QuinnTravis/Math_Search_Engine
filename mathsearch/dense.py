@@ -27,6 +27,20 @@ def embed(model, texts, show_progress=False):
     return np.asarray(vectors, dtype="float32")
 
 
+def token_counts(model, words):
+    """Number of WordPiece tokens in each word, without [CLS]/[SEP]."""
+    if not words:
+        return []
+    ids = model.tokenizer(words, add_special_tokens=False, verbose=False)["input_ids"]
+    return [len(word_ids) for word_ids in ids]
+
+
+def token_lengths(model, texts):
+    """Length of each text as the model sees it before truncation, including [CLS] and [SEP]."""
+    ids = model.tokenizer(texts, add_special_tokens=True, verbose=False)["input_ids"]
+    return [len(text_ids) for text_ids in ids]
+
+
 def build_flat_index(vectors):
     """Exact inner-product search over every vector. With unit vectors, inner product is cosine similarity."""
     index = faiss.IndexFlatIP(vectors.shape[1])

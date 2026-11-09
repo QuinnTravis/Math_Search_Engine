@@ -51,31 +51,45 @@ def write_queries(path):
 def toy_index(tmp_path):
     manifest = make_corpus(tmp_path / "corpus")
     config = {**BASELINE_CONFIG, "name": "toy"}
-    index_dir = build_index(config, manifest, tmp_path / "index", tmp_path / "pages", with_dense=False)
+    build_index(config, manifest, tmp_path / "index", tmp_path / "pages", with_dense=False)
     queries_path = tmp_path / "queries.jsonl"
     write_queries(queries_path)
-    return index_dir, queries_path
+    return tmp_path / "index", queries_path
 
 
 def test_bm25_end_to_end(toy_index):
-    index_dir, queries_path = toy_index
-    record = evaluate(["bm25"], ["dev"], queries_path, index_dir)
+    index_root, queries_path = toy_index
+    (queries_path.parent / "split.json").write_text(json.dumps({"seed": 3}))
+    record = evaluate(["toy:bm25"], ["dev"], queries_path, index_root)
 
     (run,) = record["runs"]
     assert run["split"] == "dev" and run["summary"]["num_queries"] == 2  # held-out query excluded
-    assert run["summary"]["recall_at_10"] == 1.0
+    assert run["index"] == "toy" and run["system"] == "bm25"
+    assert run["summary"]["span_recall_at_10"] == 1.0
     assert run["summary"]["mrr"] == 1.0  # each answer page ranks first
     assert run["summary"]["latency_p95_ms"] >= run["summary"]["latency_p50_ms"] > 0
     assert record["benchmark"]["sha256"] == sha256_of(queries_path)
+    assert record["benchmark"]["split_seed"] == 3
+    assert record["eval_settings"]["min_overlap"] == 0.5
+    # chunk length is logged with the run: each toy page is one chunk
+    word_counts = [len(text.split()) for text in PAGES]
+    assert run["summary"]["mean_chunk_words"] == pytest.approx(sum(word_counts) / len(word_counts))
+    assert run["summary"]["mean_retrieved_chunk_words"] > 0
     assert record["git"]["commit"]
     json.dumps(record)  # the record must be serialisable
 
 
 def test_bad_labels_stop_the_run(toy_index):
-    index_dir, queries_path = toy_index
+    index_root, queries_path = toy_index
     queries_path.write_text(json.dumps({
         "id": "q001", "query": "x", "category": "theorem", "split": "dev", "notes": "",
         "labels": [{"book": "toy", "start": 9, "end": 9, "grade": 2}],
     }) + "\n")
     with pytest.raises(SystemExit, match="bad page range"):
-        evaluate(["bm25"], ["dev"], queries_path, index_dir)
+        evaluate(["toy:bm25"], ["dev"], queries_path, index_root)
+
+
+def test_unbuilt_index_is_reported(toy_index):
+    index_root, queries_path = toy_index
+    with pytest.raises(SystemExit, match="not built"):
+        evaluate(["missing:bm25"], ["dev"], queries_path, index_root)
